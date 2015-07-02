@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"encoding/hex"
 	"net/http"
+	"bytes"
 	"fmt"
 	"os"
 	"crypto/rand"
@@ -32,6 +34,13 @@ func WriteResult(w http.ResponseWriter, result string) {
 	w.Write(b)
 }
 
+
+func WriteError(w http.ResponseWriter, err error) {
+	resp := HTTPResponse{"", err.Error()}
+	b, _ := json.Marshal(resp)
+	w.Write(b)
+}
+
 func nonceHandler(w http.ResponseWriter, r *http.Request) {
 	args := conv(r)
 	val := args["nonce"]
@@ -41,6 +50,45 @@ func nonceHandler(w http.ResponseWriter, r *http.Request) {
 		WriteResult(w, fmt.Sprintf("%v", res))
 		return
 	}
+}
+
+func verifyHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("in verif")
+
+	args := conv(r)
+	addr := args["addr"]
+	hash := args["hash"]
+	sig := args["sig"]
+
+	fmt.Println(addr, hash, sig)
+	
+	client := &http.Client{}
+	jsonBytes, err := json.Marshal(args)
+	if err != nil{
+		WriteError(w, err)
+		return 
+	}
+	buf := bytes.NewBuffer(jsonBytes)
+	req, err := http.NewRequest("POST", "http://localhost:4767/verify", buf)
+	if err != nil{
+		WriteError(w, err)
+		return 
+	}
+	resp, err := client.Do(req)
+	if err != nil{
+		WriteError(w, err)
+		return
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil{
+		WriteError(w, err)
+		return
+	}
+	resp.Body.Close()
+	fmt.Println("Body:", string(b))
+	fmt.Println(resp.Status)
+	WriteResult(w, string(b))
+
 }
 
 func conv(r *http.Request) (args map[string]string) {
@@ -56,19 +104,16 @@ func conv(r *http.Request) (args map[string]string) {
 }
 
 func randString(n int) string {
-	const alphanum = "0123456789abcdefABCDEF"
 	var bytes = make([]byte, n)
 	rand.Read(bytes)
-	for i, b := range bytes {
-		bytes[i] = alphanum[b % byte(len(alphanum))]
-	}
-	return string(bytes)
+	s := hex.EncodeToString(bytes)
+	return s
 }
 
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", rootHandler)
 	mux.HandleFunc("/nonce", nonceHandler);
-//	fmt.Println(randString(10))
+	mux.HandleFunc("/verify", verifyHandler);
 	fmt.Println(http.ListenAndServe(":8080", mux))
 }

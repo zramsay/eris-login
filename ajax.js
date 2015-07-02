@@ -28,9 +28,6 @@ function sendinfo() {
 	var auth = document.getElementById("password").value;
 	console.log("name & pass ", name, auth);
 	
-//	nonce = makeNonce();
-//	console.log("nonce", nonce);
-
 	xmlhttp = new_request_obj();
 	request_callback(xmlhttp, callback, []);
 	make_request(xmlhttp, "POST", "http://localhost:4767/name", true, {"name":name});
@@ -44,13 +41,9 @@ function callback() {
 	addr = response.Response;
 	var err = response.Error;
 
-	var hash = nonce;
-	console.log("hahs", hash);
-
-	console.log("addr & err", addr, err);
-
 	xmlhttp = new_request_obj();
 	request_callback(xmlhttp, callback2, []);
+	//sign on local machin
 	make_request(xmlhttp, "POST", "http://localhost:4767/sign", true, {"addr":addr, "hash":hash });
 }
 
@@ -59,14 +52,13 @@ function callback2(){
 	var response = JSON.parse(xmlhttp.responseText);
 	console.log("signature", response);
 
-	var hash = nonce;
-	
 	var sig = response.Response;
 	var err = response.Error;
 
 	xmlhttp = new_request_obj();
 	request_callback(xmlhttp, callback3, []);
-	make_request(xmlhttp, "POST", "http://localhost:4767/verify", true, {"addr":addr, "hash":hash, "sig":sig });
+	//send to remote server for verification
+	make_request(xmlhttp, "POST", "http://52.24.53.32:8080/verify", true, {"addr":addr, "hash":hash, "sig":sig });
 
 }
 
@@ -75,16 +67,6 @@ function callback3() {
 	var response = JSON.parse(xmlhttp.responseText);
 	console.log("verify", response);
 
-}
-
-function makeNonce() {
-	var text = "";
-	//hex only for now
-	var possible = "ABCDEFabcdef0123456789";
-	
-	for( var i=0; i < 10 ; i++ )
-		text += possible.charAt(Math.floor(Math.random() * possible.length));
-	return text;
 }
 
 function getNonce() {
@@ -101,6 +83,8 @@ function theNonce() {
 	console.log("theNonce");
 	var response = JSON.parse(xmlhttp.responseText);
 	console.log("nonce?", response);
+	hash = response.Response
+	err = response.Error
 }
 
 
