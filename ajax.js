@@ -28,8 +28,8 @@ function sendinfo() {
 	var auth = document.getElementById("password").value;
 	console.log("name & pass ", name, auth);
 	
-	nonce = makeNonce();
-	console.log("nonce", nonce);
+//	nonce = makeNonce();
+//	console.log("nonce", nonce);
 
 	xmlhttp = new_request_obj();
 	request_callback(xmlhttp, callback, []);
@@ -86,3 +86,21 @@ function makeNonce() {
 		text += possible.charAt(Math.floor(Math.random() * possible.length));
 	return text;
 }
+
+function getNonce() {
+	console.log("getNonce");
+
+	var nonce = 'TRUE';
+	
+	xmlhttp = new_request_obj();
+	request_callback(xmlhttp, theNonce, []);
+	make_request(xmlhttp, "POST", "http://52.24.53.32:8080/nonce", true, {"nonce":nonce });
+}
+
+function theNonce() {
+	console.log("theNonce");
+	var response = JSON.parse(xmlhttp.responseText);
+	console.log("nonce?", response);
+}
+
+
